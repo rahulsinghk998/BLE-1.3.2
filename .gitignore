@@ -1,3 +1,11 @@
 EULA.pdf
 README.txt
 _iss/
+*.pbi
+
+.pbd
+.dep
+*.pbd
+*.d51
+*.r51
+*.dni
