@@ -714,7 +714,7 @@ void wakeUpEvent(void)
       (demo.gapProfileState == GAPROLE_WAITING_AFTER_TIMEOUT))
   {
     Batt_MeasLevel();
-    //cbLED_flash(cbLED_GREEN, 1, 100, 0);
+    cbLED_flash(cbLED_GREEN, 1, 100, 0);
   }
   
   cbLOG_PRINT("Wake up event\r\n");      
