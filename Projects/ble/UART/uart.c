@@ -1,7 +1,7 @@
 #include <iocc2540.h>
 #include "uart.h"
 
-void Uart_Init(void)
+void Uart_Init(unsigned int baudrate)
 {
   CLKCONCMD &= ~(1<<6); // Select system clock to 32M XOSC
   while (CLKCONSTA & (1<<6)) ; 
@@ -11,10 +11,24 @@ void Uart_Init(void)
   P2DIR &= ~(3<<6); // Set port 0 priority 1st priority: USART 0 2nd priority: USART 1 3rd priority: Timer 1
 
   U0CSR |= 1<<7; //UART0 set to UART mode
-  U0GCR = 9; // Set BAUD_E to 1001
-  U0BAUD = 59; // Set BAUD_M to 0011 1011, refer to table 17-1
+  switch ( baudrate ) {
+    case 115200:
+      U0GCR = 11;
+      U0BAUD = 216;
+      break;
+    case 9600:
+      U0GCR = 8;
+      U0BAUD = 59;
+      break;
+    default:
+      U0GCR = 9;
+      U0BAUD = 59;
+      break;
+  }
   UTX0IF = 0; // Clear USART 0 TX interrupt flag
   U0CSR |= 1<<6; // Enable UART0 receiver
+  URX0IE = 1; // USART0 RX interrupt enable
+  EA = 1; // Each interrupt source is individually enabled or disabled by setting its corresponding enable bit.
 }
 
 void Uart_Print(char *p, int len)
