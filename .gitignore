@@ -8,3 +8,6 @@ _iss/
 *.d51
 *.r51
 *.dni
+*.hex
+*.map
+
