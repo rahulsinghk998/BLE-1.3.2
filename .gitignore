@@ -2,12 +2,9 @@ EULA.pdf
 README.txt
 _iss/
 *.pbi
-.gitignore
-*.dep
-*.pbd
+*.dep 
 *.d51
 *.r51
-*.dni
 *.hex
 *.map
 
