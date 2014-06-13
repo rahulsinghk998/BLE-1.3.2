@@ -36,8 +36,8 @@ void Uart_Print(char *p, int len)
   unsigned int i;
   for (i = 0; i < len; i++) {
     U0DBUF = *p++; // write data to buffer for sending
-    while (!UTX0IF); // wait for send complete
-    UTX0IF = 0; // 0: Interrupt not pending
+    while (!UTX0IF); // If send complete, UTX0IF will be set to 1
+    UTX0IF = 0; //  Interrupt not pending
   }
   U0DBUF = 0x0A; // carriage return
   while (!UTX0IF) ;
