@@ -24,7 +24,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS?WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -49,6 +49,7 @@
 
 #include "hal_led.h"
 #include "hal_key.h"
+#include "hal_uart.h"
 
 
 /*********************************************************************
@@ -319,6 +320,27 @@ __near_func void Onboard_soft_reset( void )
 {
   HAL_DISABLE_INTERRUPTS();
   asm("LJMP 0x0");
+}
+
+//UART
+
+void UartInit(void)
+{ 
+  halUARTCfg_t uartConfig;
+
+  /* UART Configuration */
+  uartConfig.configured           = TRUE;
+  uartConfig.baudRate             = HAL_UART_BR_115200;
+  uartConfig.flowControl          = HAL_UART_FLOW_OFF;
+  uartConfig.flowControlThreshold = MT_UART_THRESHOLD;
+  uartConfig.rx.maxBufSize        = MT_UART_RX_BUFF_MAX;
+  uartConfig.tx.maxBufSize        = MT_UART_TX_BUFF_MAX;
+  uartConfig.idleTimeout          = MT_UART_IDLE_TIMEOUT;
+  uartConfig.intEnable            = TRUE;
+  //uartConfig.callBackFunc         = NULL;
+  uartConfig.callBackFunc         = NULL;
+ 
+  HalUARTOpen (HAL_UART_PORT_0, &uartConfig);
 }
 
 #if   defined FEATURE_ABL

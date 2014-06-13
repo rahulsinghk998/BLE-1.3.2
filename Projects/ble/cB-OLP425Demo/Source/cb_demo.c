@@ -236,6 +236,11 @@ static cbBLS_Callbacks blsCallbacks = {
 void cbDEMO_init( uint8 taskId )
 {   
   demo.taskId = taskId;
+  
+  //UART
+  UartInit();
+  HalUARTWrite(0, "Hello OMS\n", 10);
+  
   demo.gapProfileState = GAPROLE_INIT;
   demo.currentTemperature  = 0;
   demo.batteryLevel = 100;

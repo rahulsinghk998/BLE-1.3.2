@@ -269,7 +269,7 @@
           <state>HALNODEBUG</state>
           <state>OSAL_CBTIMER_NUM_TASKS=1</state>
           <state>HAL_AES_DMA=FALSE</state>
-          <state>POWER_SAVING</state>
+          <state>xPOWER_SAVING</state>
           <state>HAL_LCD=FALSE</state>
           <state>HAL_LED=FALSE</state>
           <state>HAL_KEY=FALSE</state>

@@ -180,6 +180,9 @@ extern void OnBoard_KeyCallback ( uint8 keys, uint8 state );
 extern __near_func void Onboard_soft_reset( void );
 
 
+//UART
+extern void UartInit ( void );
+
 /*********************************************************************
  */
 
