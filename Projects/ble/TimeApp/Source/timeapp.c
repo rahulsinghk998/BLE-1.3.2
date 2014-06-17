@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS?WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -47,6 +47,7 @@
 #include "hal_led.h"
 #include "hal_key.h"
 #include "hal_lcd.h"
+#include "hal_uart.h"
 #include "ll.h"
 #include "linkdb.h"
 #include "gatt.h"
@@ -255,7 +256,8 @@ static void timeAppGapStateCB( gaprole_States_t newState );
 static void timeAppPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
                                         uint8 uiInputs, uint8 uiOutputs );
 static void timeAppPairStateCB( uint16 connHandle, uint8 state, uint8 status );
-static void timeApp_HandleKeys( uint8 shift, uint8 keys );
+//static void timeApp_HandleKeys( uint8 shift, uint8 keys );
+static void timeApp_HandleSerial( mtOSALSerialData_t *cmdMsg);
 static void timeApp_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 
 #ifndef CC2540_MINIDK
@@ -301,6 +303,11 @@ void TimeApp_Init( uint8 task_id )
 {
   timeAppTaskId = task_id;
 
+  //UART 
+  UartInit();
+  RegisterForSerial( timeAppTaskId );
+  HalUARTWrite (0, "Hello OUS\n", 10);
+  
   // Setup the GAP Peripheral Role Profile
   {
     uint8 advEnable = FALSE;      
@@ -431,7 +438,7 @@ uint16 TimeApp_ProcessEvent( uint8 task_id, uint16 events )
 
   if ( events & CLOCK_UPDATE_EVT )
   {
-    timeAppClockDisplay();
+    //timeAppClockDisplay();
 
     // Restart clock tick timer
     osal_start_timerEx( timeAppTaskId, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
@@ -456,18 +463,170 @@ static void timeApp_ProcessOSALMsg( osal_event_hdr_t *pMsg )
 {
   switch ( pMsg->event )
   {
-    case KEY_CHANGE:
+    /*case KEY_CHANGE:
       timeApp_HandleKeys( ((keyChange_t *)pMsg)->state, ((keyChange_t *)pMsg)->keys );
       break;
-
+    */
     case GATT_MSG_EVENT:
       timeAppProcessGattMsg( (gattMsgEvent_t *) pMsg );
       break;
       
+    case SERIAL_MSG:
+      //HalUARTWrite(HAL_UART_PORT_0,"SERIAL\n",7 );
+      timeApp_HandleSerial( (mtOSALSerialData_t *)pMsg );
+      break;
+    
     default:
       break;
   }
 }
+
+
+/*********************************************************************
+ * @fn      timeApp_HandleSerial
+ *
+ * @brief   Handles all serial events for this device.
+ *
+ 
+ *
+ * @return  none
+*/
+static void timeApp_HandleSerial( mtOSALSerialData_t *cmdMsg )
+{
+  uint8 i, len, *str = NULL;
+  str = cmdMsg->msg;
+  len = *str;
+  
+  for (i = 0; i <= len; i++)
+    HalUARTWrite(0,str+i,1 ); 
+  
+  uint8 CMD;
+  //uint8 gStatus;
+
+  CMD = str[1];
+  if ( CMD == '1' )
+  {
+    // Start or stop advertising
+    if ( timeAppGapState != GAPROLE_CONNECTED )
+    {
+      uint8 advState;
+      
+      // Set fast advertising interval for user-initiated connections
+      GAP_SetParamValue( TGAP_GEN_DISC_ADV_INT_MIN, DEFAULT_FAST_ADV_INTERVAL );
+      GAP_SetParamValue( TGAP_GEN_DISC_ADV_INT_MAX, DEFAULT_FAST_ADV_INTERVAL );
+      GAP_SetParamValue( TGAP_GEN_DISC_ADV_MIN, DEFAULT_FAST_ADV_DURATION );
+
+      // Toggle advertising state      
+      GAPRole_GetParameter( GAPROLE_ADVERT_ENABLED, &advState );
+      advState = !advState;
+      GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &advState );
+      
+      // Set state variable
+      if (advState == FALSE)
+      {
+        timeAppAdvCancelled = TRUE;
+      }
+    }
+  }
+
+  if ( CMD == '2' )
+  {
+    attWriteReq_t req;
+
+    // Send command to alert notificaton control point
+    if ( ( timeAppGapState == GAPROLE_CONNECTED ) &&
+         ( timeAppHdlCache[HDL_ALERT_NTF_CTRL] != 0 ) )
+    {
+      // Send write request
+      req.len = 2;
+      req.value[0] = *pTimeAppAlertCmd;
+      req.value[1] = ALERT_NOTIF_CAT_ALL;
+      req.sig = 0;
+      req.cmd = 0;
+      req.handle = timeAppHdlCache[HDL_ALERT_NTF_CTRL];
+      GATT_WriteCharValue( timeAppConnHandle, &req, timeAppTaskId );
+      LCD_WRITE_STRING_VALUE( "Alert cmd:", *pTimeAppAlertCmd, 10, HAL_LCD_LINE_1);
+    }
+    
+    // Cycle through command test values
+    if ( *pTimeAppAlertCmd == ALERT_NOTIF_DISABLE_UNREAD )
+    {
+      pTimeAppAlertCmd = timeAppAlertCmd;
+    }
+    else
+    {
+      pTimeAppAlertCmd++;
+    }
+  }
+
+  if ( CMD == '4' )
+  {
+    attWriteReq_t req;
+    
+    // Do a reference time update
+    if ( ( timeAppGapState == GAPROLE_CONNECTED ) &&
+         ( timeAppHdlCache[HDL_REF_TIME_UPD_CTRL] != 0 ) )
+    {
+      // Send write command
+      req.len = 1;
+      req.value[0] = timeAppRefUpdateVal;
+      req.sig = 0;
+      req.cmd = 1;
+      req.handle = timeAppHdlCache[HDL_REF_TIME_UPD_CTRL];
+      GATT_WriteNoRsp( timeAppConnHandle, &req );
+
+      LCD_WRITE_STRING_VALUE( "Time update:", timeAppRefUpdateVal, 10, HAL_LCD_LINE_1);
+      
+      // Toggle between two reference time update values
+      if ( timeAppRefUpdateVal == REF_TIME_UPDATE_GET )
+      {
+        timeAppRefUpdateVal = REF_TIME_UPDATE_CANCEL;
+      }
+      else
+      {
+        timeAppRefUpdateVal = REF_TIME_UPDATE_GET;
+      }
+    }
+  }
+  
+  if ( CMD == '3' )
+  {
+    // If connected, terminate connection
+    if ( timeAppGapState == GAPROLE_CONNECTED )
+    {
+      GAPRole_TerminateConnection();
+    }
+  }
+  
+  if ( CMD == '5' )
+  {
+    attWriteReq_t req;
+    
+    // Write ringer control point
+    if ( ( timeAppGapState == GAPROLE_CONNECTED ) &&
+         ( timeAppHdlCache[HDL_PAS_CTRL] != 0 ) )
+    {
+      // Send write command
+      req.len = 1;
+      req.value[0] = timeAppRingerCmd;
+      req.sig = 0;
+      req.cmd = 1;
+      req.handle = timeAppHdlCache[HDL_PAS_CTRL];
+      GATT_WriteNoRsp( timeAppConnHandle, &req );
+
+      LCD_WRITE_STRING_VALUE( "Ringer ctrl:", timeAppRingerCmd, 10, HAL_LCD_LINE_1);
+      
+      // Toggle between values
+      if ( ++timeAppRingerCmd > RINGER_CANCEL_SILENT )
+      {
+        timeAppRingerCmd = RINGER_SILENT_MODE;
+      }
+    }
+  }
+  
+
+}
+
 
 /*********************************************************************
  * @fn      timeApp_HandleKeys
@@ -480,7 +639,7 @@ static void timeApp_ProcessOSALMsg( osal_event_hdr_t *pMsg )
  *                 HAL_KEY_SW_1
  *
  * @return  none
- */
+
 static void timeApp_HandleKeys( uint8 shift, uint8 keys )
 {
   if ( keys & HAL_KEY_UP )
@@ -609,6 +768,7 @@ static void timeApp_HandleKeys( uint8 shift, uint8 keys )
   }
 
 }
+ */
 
 /*********************************************************************
  * @fn      timeAppProcessGattMsg
