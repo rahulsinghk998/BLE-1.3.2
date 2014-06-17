@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS?WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -48,6 +48,7 @@
 #include "hal_led.h"
 #include "hal_key.h"
 #include "hal_lcd.h"
+#include "hal_uart.h"
 #include "gatt.h"
 #include "ll.h"
 #include "hci.h"
@@ -220,6 +221,7 @@ static void simpleBLECentralPasscodeCB( uint8 *deviceAddr, uint16 connectionHand
                                         uint8 uiInputs, uint8 uiOutputs );
 static void simpleBLECentralPairStateCB( uint16 connHandle, uint8 state, uint8 status );
 static void simpleBLECentral_HandleKeys( uint8 shift, uint8 keys );
+static void simpleBLEPeripheral_HandleSerial(mtOSALSerialData_t *cmdMsg);
 static void simpleBLECentral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
 static void simpleBLEGATTDiscoveryEvent( gattMsgEvent_t *pMsg );
 static void simpleBLECentralStartDiscovery( void );
@@ -266,6 +268,10 @@ static const gapBondCBs_t simpleBLEBondCB =
 void SimpleBLECentral_Init( uint8 task_id )
 {
   simpleBLETaskId = task_id;
+  //UART
+  UartInit();
+  RegisterForSerial( simpleBLETaskId );
+  HalUARTWrite(0,"Hello OUS\n",10);
 
   // Setup Central Profile
   {
@@ -388,7 +394,172 @@ static void simpleBLECentral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
     case GATT_MSG_EVENT:
       simpleBLECentralProcessGATTMsg( (gattMsgEvent_t *) pMsg );
       break;
+
+    case SERIAL_MSG:
+      //HalUARTWrite(HAL_UART_PORT_0,"SERIAL\n",7 );
+      simpleBLEPeripheral_HandleSerial( (mtOSALSerialData_t *)pMsg );
+      break;
   }
+}
+
+
+static void simpleBLEPeripheral_HandleSerial(mtOSALSerialData_t *cmdMsg)
+{
+  uint8 i,len,*str=NULL;  //lenÓÐÓÃÊý¾Ý³¤¶È
+  str=cmdMsg->msg;        //Ö¸ÏòÊý¾Ý¿ªÍ·
+  len=*str;               //msgÀïµÄµÚ1¸ö×Ö½Ú´ú±íºóÃæµÄÊý¾Ý³¤¶È
+  
+  /********´òÓ¡³ö´®¿Ú½ÓÊÕµ½µÄÊý¾Ý£¬ÓÃÓÚÌáÊ¾*********/
+  for(i=1;i<=len;i++)
+    HalUARTWrite(0,str+i,1 ); 
+  //HalUARTWrite(0,"\n",1); 
+  
+  uint8 CMD;
+  uint8 gStatus;
+  
+  CMD = str[1];
+  if ( CMD == '1' ) {
+    // Start or stop discovery  ¿ªÊ¼»òÍ£Ö¹Éè±¸É¨Ãè
+    if ( simpleBLEState != BLE_STATE_CONNECTED )
+    {
+      if ( !simpleBLEScanning )
+      {
+        simpleBLEScanning = TRUE;
+        simpleBLEScanRes = 0;
+        
+        LCD_WRITE_STRING( "Discovering...", HAL_LCD_LINE_1 );
+        LCD_WRITE_STRING( "", HAL_LCD_LINE_2 );
+        
+        GAPCentralRole_StartDiscovery( DEFAULT_DISCOVERY_MODE,
+                                       DEFAULT_DISCOVERY_ACTIVE_SCAN,
+                                       DEFAULT_DISCOVERY_WHITE_LIST );      
+      }
+      else
+      {
+        GAPCentralRole_CancelDiscovery();   //È¡ÏûÉ¨Ãè
+      }
+    }
+    else if ( simpleBLEState == BLE_STATE_CONNECTED &&
+              simpleBLECharHdl != 0 &&
+              simpleBLEProcedureInProgress == FALSE )
+    {
+      uint8 status;
+      
+      // Do a read or write as long as no other read or write is in progress
+      if ( simpleBLEDoWrite )
+      {
+        // Do a write
+        attWriteReq_t req;
+        
+        req.handle = simpleBLECharHdl;
+        req.len = 1;
+        req.value[0] = simpleBLECharVal;
+        req.sig = 0;
+        req.cmd = 0;
+        status = GATT_WriteCharValue( simpleBLEConnHandle, &req, simpleBLETaskId );         
+      }
+      else
+      {
+        // Do a read
+        attReadReq_t req;
+        
+        req.handle = simpleBLECharHdl;
+        status = GATT_ReadCharValue( simpleBLEConnHandle, &req, simpleBLETaskId );
+      }
+      
+      if ( status == SUCCESS )
+      {
+        simpleBLEProcedureInProgress = TRUE;
+        simpleBLEDoWrite = !simpleBLEDoWrite;
+      }
+    }    
+  }
+  
+  if ( CMD == '2' ) {
+    // Display discovery results    ÏÔÊ¾·¢ÏÖ½á¹û
+    if ( !simpleBLEScanning && simpleBLEScanRes > 0 )
+    {
+        // Increment index of current result (with wraparound)
+        simpleBLEScanIdx++;
+        if ( simpleBLEScanIdx >= simpleBLEScanRes )
+        {
+          simpleBLEScanIdx = 0;
+        }
+        
+        LCD_WRITE_STRING_VALUE( "Device", simpleBLEScanIdx + 1,
+                                10, HAL_LCD_LINE_1 );
+        LCD_WRITE_STRING( bdAddr2Str( simpleBLEDevList[simpleBLEScanIdx].addr ),
+                          HAL_LCD_LINE_2 );
+    }
+  }
+
+  if ( CMD == '3' ) {
+    // Connection update    Á¬½Ó¸üÐÂ
+    if ( simpleBLEState == BLE_STATE_CONNECTED )
+    {
+      GAPCentralRole_UpdateLink( simpleBLEConnHandle,
+                                 DEFAULT_UPDATE_MIN_CONN_INTERVAL,
+                                 DEFAULT_UPDATE_MAX_CONN_INTERVAL,
+                                 DEFAULT_UPDATE_SLAVE_LATENCY,
+                                 DEFAULT_UPDATE_CONN_TIMEOUT );
+    }
+  }
+  
+  if ( CMD == '4' ) {
+    uint8 addrType;
+    uint8 *peerAddr;
+    
+    // Connect or disconnect    Á¬½Ó»ò¶Ï¿ªÁ¬½Ó
+    if ( simpleBLEState == BLE_STATE_IDLE )
+    {
+      // if there is a scan result
+      if ( simpleBLEScanRes > 0 )
+      {
+        // connect to current device in scan result 
+        peerAddr = simpleBLEDevList[simpleBLEScanIdx].addr;
+        addrType = simpleBLEDevList[simpleBLEScanIdx].addrType;
+      
+        simpleBLEState = BLE_STATE_CONNECTING;
+        
+        GAPCentralRole_EstablishLink( DEFAULT_LINK_HIGH_DUTY_CYCLE,
+                                      DEFAULT_LINK_WHITE_LIST,
+                                      addrType, peerAddr );
+  
+        LCD_WRITE_STRING( "Connecting", HAL_LCD_LINE_1 );
+        LCD_WRITE_STRING( bdAddr2Str( peerAddr ), HAL_LCD_LINE_2 ); 
+      }
+    }
+    else if ( simpleBLEState == BLE_STATE_CONNECTING ||
+              simpleBLEState == BLE_STATE_CONNECTED )
+    {
+      // disconnect ¶Ï¿ªÁ¬½Ó
+      simpleBLEState = BLE_STATE_DISCONNECTING;
+
+      gStatus = GAPCentralRole_TerminateLink( simpleBLEConnHandle );
+      
+      LCD_WRITE_STRING( "Disconnecting", HAL_LCD_LINE_1 ); 
+    }
+  }
+  
+  if ( CMD == '5' ) {
+    // Start or cancel RSSI polling
+    if ( simpleBLEState == BLE_STATE_CONNECTED )
+    {
+      if ( !simpleBLERssi )
+      {
+        simpleBLERssi = TRUE;
+        GAPCentralRole_StartRssi( simpleBLEConnHandle, DEFAULT_RSSI_PERIOD );
+      }
+      else
+      {
+        simpleBLERssi = FALSE;
+        GAPCentralRole_CancelRssi( simpleBLEConnHandle ); //È¡ÏûÖÜÆÚ·¢ËÍRSSI
+        
+        LCD_WRITE_STRING( "RSSI Cancelled", HAL_LCD_LINE_1 );
+      }
+    }
+  }
+  
 }
 
 /*********************************************************************
@@ -403,11 +574,11 @@ static void simpleBLECentral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
  *
  * @return  none
  */
-uint8 gStatus;
+
 static void simpleBLECentral_HandleKeys( uint8 shift, uint8 keys )
 {
   (void)shift;  // Intentionally unreferenced parameter
-
+  uint8 gStatus;
   if ( keys & HAL_KEY_UP )
   {
     // Start or stop discovery
