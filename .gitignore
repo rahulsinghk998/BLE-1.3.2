@@ -1,7 +1,9 @@
 EULA.pdf
 README.txt
 _iss/
+#IAR files
 *.pbi
+*.pbd
 *.dep 
 *.d51
 *.r51

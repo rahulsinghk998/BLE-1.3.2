@@ -231,6 +231,8 @@ static void simpleProfileChangeCB( uint8 paramID );
 static void simpleBLEPeripheral_HandleKeys( uint8 shift, uint8 keys );
 #endif
 
+static void simpleBLEPeripheral_HandleSerial(mtOSALSerialData_t *cmdMsg);
+
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -286,6 +288,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   //UART
   UartInit();
   HalUARTWrite(0, "Hello OMS\n", 10);
+  RegisterForSerial(simpleBLEPeripheral_TaskID);
   
   // Setup the GAP
   VOID GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL );
@@ -534,12 +537,62 @@ static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
       simpleBLEPeripheral_HandleKeys( ((keyChange_t *)pMsg)->state, ((keyChange_t *)pMsg)->keys );
       break;
   #endif // #if defined( CC2540_MINIDK )
-
+      
+  case SERIAL_MSG:
+      //HalUARTWrite(HAL_UART_PORT_0,"SERIAL\n",7 );
+      simpleBLEPeripheral_HandleSerial( (mtOSALSerialData_t *)pMsg );
+      break;
+      
   default:
     // do nothing
     break;
   }
 }
+
+/*********************************************************************
+ * @fn      simpleBLEPeripheral_HandleSerial
+ *
+ * @brief   Handles all serial events for this device.
+
+*/
+
+static void simpleBLEPeripheral_HandleSerial(mtOSALSerialData_t *cmdMsg)
+{
+  uint8 i,len,*str=NULL;  //len有用数据长度
+  str=cmdMsg->msg;        //指向数据开头
+  len=*str;               //msg里的第1个字节代表后面的数据长度
+  
+  /********打印出串口接收到的数据，用于提示*********/
+  for(i=1;i<=len;i++) {
+    HalUARTWrite(0,str+i,1 ); 
+    HalUARTWrite(0,"\n",1); 
+  }
+  
+  
+  // if device is not in a connection, using the serial input toggle
+    // advertising on and off
+    if( gapProfileState != GAPROLE_CONNECTED )
+    {
+      uint8 current_adv_enabled_status;
+      uint8 new_adv_enabled_status;
+
+      //Find the current GAP advertisement status
+      GAPRole_GetParameter( GAPROLE_ADVERT_ENABLED, &current_adv_enabled_status );
+
+      if( current_adv_enabled_status == FALSE )
+      {
+        new_adv_enabled_status = TRUE;
+      }
+      else
+      {
+        new_adv_enabled_status = FALSE;
+      }
+
+      //change the GAP advertisement status to opposite of current status
+      GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &new_adv_enabled_status );
+    }
+}
+
 
 #if defined( CC2540_MINIDK )
 /*********************************************************************

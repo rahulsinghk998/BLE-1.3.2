@@ -160,7 +160,8 @@ void osalInitTasks( void )
   GATTServApp_Init( taskID++ );
 
   /* Application */
-  SimpleBLEPeripheral_Init( taskID );
+  SimpleBLEPeripheral_Init( taskID ); //Setup the GAP and GATT
+  // call osal_set_event(simpleBLEPeripheral_TaskID, SBP_START_DEVICE_EVT) start up
 }
 
 /*********************************************************************

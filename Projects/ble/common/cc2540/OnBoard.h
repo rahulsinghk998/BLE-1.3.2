@@ -180,8 +180,23 @@ extern void OnBoard_KeyCallback ( uint8 keys, uint8 state );
 extern __near_func void Onboard_soft_reset( void );
 
 
+/*
+* Register for serial events
+*/
+uint8 RegisterForSerial( uint8 task_id );
+
+
 //UART
 extern void UartInit ( void );
+
+#define SERIAL_MSG  0xC1 //Serial Events
+
+typedef struct
+{
+  osal_event_hdr_t  hdr;
+  uint8             *msg;
+} mtOSALSerialData_t;
+
 
 /*********************************************************************
  */

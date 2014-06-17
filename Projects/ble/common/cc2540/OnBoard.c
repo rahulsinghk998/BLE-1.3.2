@@ -101,6 +101,7 @@ void appForceBoot(void);
 
 // Registered keys task ID, initialized to NOT USED.
 static uint8 registeredKeysTaskID = NO_TASK_ID;
+static uint8 registeredSerialTaskID = NO_TASK_ID;
 
 /*********************************************************************
  * @fn      InitBoard()
@@ -324,6 +325,54 @@ __near_func void Onboard_soft_reset( void )
 
 //UART
 
+
+/*********************************************************************
+ *                        "Serial" Support
+ *********************************************************************/
+uint8 RegisterForSerial( uint8 task_id )
+{
+  // Allow only the first task
+  if ( registeredSerialTaskID == NO_TASK_ID )
+  {
+    registeredSerialTaskID = task_id;
+    return ( true );
+  }
+  else
+    return ( false );
+}
+
+
+
+static void SerialCallback( uint8 port, uint8 event )
+{   
+  mtOSALSerialData_t  *pMsgSerial; 
+  uint8 flag=0,i,j=0;   //flag是判断有没有收到数据，j记录数据长度 
+  uint8 buf[128];       //串口buffer最大缓冲默认是128，我们这里用128. 
+  (void)event;           // Intentionally unreferenced parameter    
+  while (Hal_UART_RxBufLen(port)) //检测串口数据是否接收完成 
+  { 
+   HalUARTRead (port,&buf[j], 1);   //把数据接收放到buf中 
+   j++;                                      //记录字符数 
+   flag=1;                         //已经从串口接收到信息 
+  }   
+  if(flag==1)        //已经从串口接收到信息 
+  {     /* Allocate memory for the data */ 
+    //分配内存空间，为结构体内容+数据内容+1个记录长度的数据 
+    pMsgSerial = (mtOSALSerialData_t *)osal_msg_allocate( sizeof    
+            ( mtOSALSerialData_t )+j+1); 
+     
+    pMsgSerial->hdr.event = SERIAL_MSG;        // 事件号用SERIAL_MSG,需要添加
+    pMsgSerial->msg = (uint8*)(pMsgSerial+1);  // 把数据定位到结构体数据部分 
+     
+   pMsgSerial->msg [0]= j;         //给上层的数据第一个是长度 
+   for(i=0;i<j;i++)                //从第二个开始记录数据   
+     pMsgSerial->msg [i+1]= buf[i];      
+   osal_msg_send( registeredSerialTaskID, (uint8 *)pMsgSerial );  //登记任务，发往上层 
+    /* deallocate the msg */ 
+   osal_msg_deallocate ( (uint8 *)pMsgSerial );            //释放内存 
+  } 
+}
+
 void UartInit(void)
 { 
   halUARTCfg_t uartConfig;
@@ -338,7 +387,7 @@ void UartInit(void)
   uartConfig.idleTimeout          = MT_UART_IDLE_TIMEOUT;
   uartConfig.intEnable            = TRUE;
   //uartConfig.callBackFunc         = NULL;
-  uartConfig.callBackFunc         = NULL;
+  uartConfig.callBackFunc         = SerialCallback;
  
   HalUARTOpen (HAL_UART_PORT_0, &uartConfig);
 }
