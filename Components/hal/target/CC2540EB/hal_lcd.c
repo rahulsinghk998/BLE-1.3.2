@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS?WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -45,6 +45,7 @@
 #include "OSAL.h"
 #include "OnBoard.h"
 #include "hal_assert.h"
+#include "hal_uart.h"
 
 #if defined (ZTOOL_P1) || defined (ZTOOL_P2)
   #include "DebugTrace.h"
@@ -268,6 +269,9 @@ void HalLcdInit(void)
  **************************************************************************************************/
 void HalLcdWriteString ( char *str, uint8 option)
 {
+HalUARTWrite(0, (unsigned char*) str,(uint8)osal_strlen( (char*)str)  ); 
+HalUARTWrite(0,"\n",1); 
+
 #if (HAL_LCD == TRUE)
 
   uint8 strLen = 0;
