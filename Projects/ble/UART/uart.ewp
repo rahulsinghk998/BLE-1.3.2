@@ -12,7 +12,7 @@
       <name>General</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <version>5</version>
+        <version>6</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>1</debug>
         <option>
@@ -154,8 +154,8 @@
         </option>
         <option>
           <name>Input variant</name>
-          <version>0</version>
-          <state>1</state>
+          <version>1</version>
+          <state>2</state>
         </option>
         <option>
           <name>Input description</name>
@@ -163,8 +163,8 @@
         </option>
         <option>
           <name>Output variant</name>
-          <version>0</version>
-          <state>1</state>
+          <version>1</version>
+          <state>2</state>
         </option>
         <option>
           <name>Output description</name>
@@ -250,13 +250,25 @@
           <version>0</version>
           <state>3</state>
         </option>
+        <option>
+          <name>Extended stack address</name>
+          <state>0x9B</state>
+        </option>
+        <option>
+          <name>Extended stack mask</name>
+          <state>0x03</state>
+        </option>
+        <option>
+          <name>Extended stack is offset</name>
+          <state>0</state>
+        </option>
       </data>
     </settings>
     <settings>
       <name>ICC8051</name>
-      <archiveVersion>4</archiveVersion>
+      <archiveVersion>5</archiveVersion>
       <data>
-        <version>9</version>
+        <version>10</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>1</debug>
         <option>
@@ -439,7 +451,7 @@
         </option>
         <option>
           <name>CCIncludePath2</name>
-          <state></state>
+          <state>$PROJ_DIR$/components/</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -497,7 +509,19 @@
           <state>1</state>
         </option>
         <option>
-          <name>IccRelaxedFpPrecision</name>
+          <name>IccCppInlineSemantics</name>
+          <state>0</state>
+        </option>
+        <option>
+          <name>IccStaticDestr</name>
+          <state>1</state>
+        </option>
+        <option>
+          <name>IccFloatSemantics</name>
+          <state>0</state>
+        </option>
+        <option>
+          <name>NoSizeConstraints</name>
           <state>0</state>
         </option>
       </data>
@@ -506,7 +530,7 @@
       <name>A8051</name>
       <archiveVersion>2</archiveVersion>
       <data>
-        <version>5</version>
+        <version>6</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>1</debug>
         <option>
@@ -577,10 +601,6 @@
         <option>
           <name>MultiLine</name>
           <state>0</state>
-        </option>
-        <option>
-          <name>NoStruct</name>
-          <state>1</state>
         </option>
         <option>
           <name>PageLengthCheck</name>
@@ -685,7 +705,7 @@
       <name>XLINK</name>
       <archiveVersion>3</archiveVersion>
       <data>
-        <version>17</version>
+        <version>18</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>1</debug>
         <option>
@@ -1000,6 +1020,11 @@
           <name>Linker Far22 Heap Size</name>
           <state>1</state>
         </option>
+        <option>
+          <name>CrcUnitSize</name>
+          <version>0</version>
+          <state>0</state>
+        </option>
       </data>
     </settings>
     <settings>
@@ -1043,7 +1068,7 @@
       <name>General</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <version>5</version>
+        <version>6</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>0</debug>
         <option>
@@ -1185,8 +1210,8 @@
         </option>
         <option>
           <name>Input variant</name>
-          <version>0</version>
-          <state>0</state>
+          <version>1</version>
+          <state>1</state>
         </option>
         <option>
           <name>Input description</name>
@@ -1194,8 +1219,8 @@
         </option>
         <option>
           <name>Output variant</name>
-          <version>0</version>
-          <state>0</state>
+          <version>1</version>
+          <state>1</state>
         </option>
         <option>
           <name>Output description</name>
@@ -1281,13 +1306,25 @@
           <version>0</version>
           <state>1</state>
         </option>
+        <option>
+          <name>Extended stack address</name>
+          <state>0x9B</state>
+        </option>
+        <option>
+          <name>Extended stack mask</name>
+          <state>0x03</state>
+        </option>
+        <option>
+          <name>Extended stack is offset</name>
+          <state>0</state>
+        </option>
       </data>
     </settings>
     <settings>
       <name>ICC8051</name>
-      <archiveVersion>4</archiveVersion>
+      <archiveVersion>5</archiveVersion>
       <data>
-        <version>9</version>
+        <version>10</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>0</debug>
         <option>
@@ -1528,7 +1565,19 @@
           <state>1</state>
         </option>
         <option>
-          <name>IccRelaxedFpPrecision</name>
+          <name>IccCppInlineSemantics</name>
+          <state>0</state>
+        </option>
+        <option>
+          <name>IccStaticDestr</name>
+          <state>1</state>
+        </option>
+        <option>
+          <name>IccFloatSemantics</name>
+          <state>0</state>
+        </option>
+        <option>
+          <name>NoSizeConstraints</name>
           <state>0</state>
         </option>
       </data>
@@ -1537,7 +1586,7 @@
       <name>A8051</name>
       <archiveVersion>2</archiveVersion>
       <data>
-        <version>5</version>
+        <version>6</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>0</debug>
         <option>
@@ -1608,10 +1657,6 @@
         <option>
           <name>MultiLine</name>
           <state>0</state>
-        </option>
-        <option>
-          <name>NoStruct</name>
-          <state>1</state>
         </option>
         <option>
           <name>PageLengthCheck</name>
@@ -1716,7 +1761,7 @@
       <name>XLINK</name>
       <archiveVersion>3</archiveVersion>
       <data>
-        <version>17</version>
+        <version>18</version>
         <wantNonLocal>1</wantNonLocal>
         <debug>0</debug>
         <option>
@@ -2031,6 +2076,11 @@
           <name>Linker Far22 Heap Size</name>
           <state>1</state>
         </option>
+        <option>
+          <name>CrcUnitSize</name>
+          <version>0</version>
+          <state>0</state>
+        </option>
       </data>
     </settings>
     <settings>
@@ -2064,6 +2114,24 @@
       <data/>
     </settings>
   </configuration>
+  <group>
+    <name>components</name>
+    <file>
+      <name>$PROJ_DIR$\components\hal_mcu.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\components\hal_types.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\components\ioCC254x_bitdef.h</name>
+    </file>
+  </group>
+  <file>
+    <name>$PROJ_DIR$\i2c.c</name>
+  </file>
+  <file>
+    <name>$PROJ_DIR$\i2c.h</name>
+  </file>
   <file>
     <name>$PROJ_DIR$\led.c</name>
   </file>
@@ -2072,6 +2140,12 @@
   </file>
   <file>
     <name>$PROJ_DIR$\main.c</name>
+  </file>
+  <file>
+    <name>$PROJ_DIR$\tmp112.c</name>
+  </file>
+  <file>
+    <name>$PROJ_DIR$\tmp112.h</name>
   </file>
   <file>
     <name>$PROJ_DIR$\uart.c</name>

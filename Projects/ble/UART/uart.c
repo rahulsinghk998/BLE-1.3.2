@@ -1,11 +1,7 @@
-#include <iocc2540.h>
 #include "uart.h"
 
 void Uart_Init(unsigned int baudrate)
 {
-  CLKCONCMD &= ~(1<<6); // Select system clock to 32M XOSC
-  while (CLKCONSTA & (1<<6)) ; 
-  CLKCONCMD &= ~((1<<6)|(7<<0)); // Select system clock to 32M XOSC and set speed to 32M
   PERCFG = 0x00; //Configure USART0 for Alternative 1 => Port P0 (PERCFG.U0CFG = 0).
   P0SEL |= (0xf<<2); // set pin 2 3 4 5 to peripheral
   P2DIR &= ~(3<<6); // Set port 0 priority 1st priority: USART 0 2nd priority: USART 1 3rd priority: Timer 1
